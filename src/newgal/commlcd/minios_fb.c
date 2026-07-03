@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <pthread.h>   /* commlcd.h uses pthread_t/pthread_mutex_t */
 
 #include "common.h"
 #include "minigui.h"
