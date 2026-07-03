@@ -7,9 +7,10 @@
  *
  * miniOS is 32-bit x86 built -mno-sse, so the FP unit is the x87 FPU. The
  * primitives map to single x87 instructions (fsqrt/fsin/fcos/fabs/fpatan);
- * asin/acos/hypot/floor/ceil/modf are derived from them. This keeps the code
- * tiny and hardware-accurate, and pulls in NO libgcc soft-float helpers (every
- * routine stays in double - no double->int conversions).
+ * asin/acos/hypot/floor/ceil/modf are derived from them, and cbrt (needed by
+ * miarc's cubic solver, over negative args too) uses a bit-hack seed plus a few
+ * Newton steps. This keeps the code tiny and hardware-accurate, and pulls in NO
+ * libgcc soft-float helpers (every routine stays in double / 32-bit int).
  *
  * pow/log/exp/tan/fmod are declared in <math.h> but intentionally NOT defined:
  * their only callers (gamma.c) are not part of libminigui.a in this config. */
@@ -82,4 +83,29 @@ double modf(double x, double *iptr)
     double t = (x < 0.0) ? ceil(x) : floor(x);  /* integer part, toward zero */
     *iptr = t;
     return x - t;
+}
+
+/* cbrt: seed via the high word of the IEEE-754 double (x86 is little-endian, so
+ * u[1] holds sign+exponent), then Newton y = (2y + a/y^2)/3. Four iterations
+ * reach full double precision from this seed. No 64-bit int division (avoids
+ * libgcc); the /3u is on the 32-bit high word. */
+double cbrt(double x)
+{
+    if (x == 0.0)
+        return x;                    /* preserves signed zero */
+
+    int neg = (x < 0.0);
+    double a = neg ? -x : x;
+
+    union { double d; unsigned int u[2]; } v;
+    v.d = a;
+    v.u[1] = v.u[1] / 3u + 0x2A9F7893u;
+    double y = v.d;
+
+    y = (2.0 * y + a / (y * y)) / 3.0;
+    y = (2.0 * y + a / (y * y)) / 3.0;
+    y = (2.0 * y + a / (y * y)) / 3.0;
+    y = (2.0 * y + a / (y * y)) / 3.0;
+
+    return neg ? -y : y;
 }

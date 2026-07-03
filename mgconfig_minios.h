@@ -111,7 +111,9 @@
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the `strcasecmp' function. */
-#define HAVE_STRCASECMP 1
+/* miniOS lacks strcasecmp; left undef so nposix.c compiles its own (built on
+ * miniOS tolower()). */
+/* #undef HAVE_STRCASECMP */
 
 /* Define to 1 if you have the `strdup' function. */
 #define HAVE_STRDUP 1
@@ -126,7 +128,8 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strncasecmp' function. */
-#define HAVE_STRNCASECMP 1
+/* miniOS lacks strncasecmp; left undef so nposix.c compiles its own. */
+/* #undef HAVE_STRNCASECMP */
 
 /* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
    */
