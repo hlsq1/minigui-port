@@ -215,8 +215,10 @@ static unsigned char emojiSegmentationCategory (Uchar32 codepoint)
 }
 
 
+#ifndef __bool_true_false_are_defined  /* miniOS <stdlib.h> pulls <stdbool.h> */
 typedef BOOL bool;
 enum { false = FALSE, true = TRUE };
+#endif
 typedef unsigned char *emoji_text_iter_t;
 
 #include "emoji_presentation_scanner.inc"

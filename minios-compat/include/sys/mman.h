@@ -9,3 +9,6 @@
 #define MAP_PRIVATE 16
 #define MAP_FIXED 32
 #endif
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif

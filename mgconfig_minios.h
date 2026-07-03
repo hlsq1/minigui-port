@@ -306,7 +306,10 @@
 #define _MGCHARSET_UNICODE_FULL 1
 
 /* Define if support complex scripts based on HarfBuzz */
-#define _MGCOMPLEX_SCRIPTS 1
+/* miniOS has no HarfBuzz. Left undef so shape-glyphs-complex.c /
+ * harzbuff-minigui-funcs.c compile to empty objects and layout uses the basic
+ * (non-complex) shaper. Fine for Latin/CJK; drops Arabic/Indic contextual forms. */
+/* #undef _MGCOMPLEX_SCRIPTS */
 
 /* Define if include GPM mouse subdriver */
 /* #undef _MGCONSOLE_GPM */
@@ -354,7 +357,11 @@
 #define _MGCTRL_LISTVIEW 1
 
 /* Define if include MENUBUTTON control */
-#define _MGCTRL_MENUBUTTON 1
+/* Left undef: menubutton_impl.h's MENUBUTTONITEM typedef clashes with the
+ * identical-layout one in the public ctrl/menubutton.h (different struct tag).
+ * The control and its RegisterMenuButtonControl call site are both guarded by
+ * this macro, so undef removes it cleanly. Not needed for the first window. */
+/* #undef _MGCTRL_MENUBUTTON */
 
 /* Define if include MONTHCALENDAR control */
 /* #undef _MGCTRL_MONTHCAL */
@@ -761,7 +768,14 @@
 /* #undef _MGUSE_OWN_STDIO */
 
 /* Define if use libpixman for optimized pixel operations */
-#define _MGUSE_PIXMAN 1
+/* miniOS has no libpixman. Left undef so newgal blit/stretch use MiniGUI's own
+ * built-in blitters (blit_0/1/A/N.c) instead of pixman_image_* calls. */
+/* #undef _MGUSE_PIXMAN */
+
+/* Use the malloc/free fallback for the slice allocator (src/libc/mgslice.c)
+ * instead of its pthread-TLS slab caches. Standalone is single-threaded, and
+ * miniOS has no pthread_key_t / pthread_getspecific. */
+#define _MGSLICE_FALLBACK 1
 
 /* Define if use shm_open */
 /* #undef _MGUSE_SHMOPEN */
