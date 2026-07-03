@@ -129,6 +129,11 @@ static BOOL COMMLCD_SyncUpdate_Sync (_THIS)
     return FALSE;
 }
 
+/* miniOS is single-threaded standalone: no async refresh thread. The whole
+ * async machinery (semaphore plus pthread cancellation) is excluded so it does
+ * not pull the sem and pthread_cancel symbols, which miniOS's user libs lack.
+ * minios_fb.c reports COMMLCD_UPDATE_SYNC, so only the _Sync path above runs. */
+#ifndef __MINIOS__
 static BOOL COMMLCD_SyncUpdate_Async (_THIS)
 {
     BOOL rc = FALSE;
@@ -205,6 +210,7 @@ static void COMMLCD_UpdateRects_Async (_THIS, int numrects, GAL_Rect *rects)
     pthread_mutex_unlock (&this->hidden->update_lock);
     return;
 }
+#endif /* !__MINIOS__ */
 
 static GAL_VideoDevice *COMMLCD_CreateDevice (int devindex)
 {
@@ -356,25 +362,17 @@ static GAL_Surface *COMMLCD_SetVideoMode(_THIS, GAL_Surface *current,
         this->SyncUpdate = NULL;
         this->hidden->update_th = 0;
     }
+#ifndef __MINIOS__
     else if (li.update_method == COMMLCD_UPDATE_ASYNC) {
         this->UpdateRects = COMMLCD_UpdateRects_Async;
         this->SyncUpdate = COMMLCD_SyncUpdate_Async;
 
         pthread_mutex_init (&this->hidden->update_lock, NULL);
         sem_init (&this->hidden->sem_update, 0, 0);
-#if 0
-        pthread_attr_t new_attr;
-
-        pthread_attr_init (&new_attr);
-        pthread_attr_setdetachstate (&new_attr, PTHREAD_CREATE_DETACHED);
-        pthread_create (&this->hidden->update_th, &new_attr,
-                        task_do_update, this);
-        pthread_attr_destroy (&new_attr);
-#else
         pthread_create (&this->hidden->update_th, NULL,
                         task_do_update, this);
-#endif
     }
+#endif /* !__MINIOS__ */
     else {
         this->UpdateRects = COMMLCD_UpdateRects_Sync;
         this->SyncUpdate = COMMLCD_SyncUpdate_Sync;
@@ -391,11 +389,13 @@ static void COMMLCD_VideoQuit (_THIS)
         this->screen->pixels = NULL;
     }
 
+#ifndef __MINIOS__
     if (this->hidden->update_th) {
         /* send cancel request */
         pthread_cancel (this->hidden->update_th);
         pthread_join (this->hidden->update_th, NULL);
     }
+#endif /* !__MINIOS__ */
 
     if (__mg_commlcd_ops.release)
         __mg_commlcd_ops.release ();

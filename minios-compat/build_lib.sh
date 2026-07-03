@@ -77,7 +77,7 @@ for f in commlcd extern minios_fb; do cc "$MG/src/newgal/commlcd/$f.c"; done
 for f in ial comminput minios_input; do cc "$MG/src/ial/$f.c"; done
 
 # the compat translation units
-for f in mg_stdio mg_libm mg_time mg_libc mg_thread; do cc "$MG/minios-compat/src/$f.c"; done
+for f in mg_stdio mg_libm mg_time mg_libc; do cc "$MG/minios-compat/src/$f.c"; done
 
 echo "compiled .o: $ok   failed: $fail"
 [ -n "$faillist" ] && echo "FAILURES:$faillist"
