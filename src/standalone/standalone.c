@@ -211,10 +211,12 @@ BOOL salone_IdleHandler4StandAlone (PMSGQUEUE msg_queue, BOOL wait)
     struct timeval sel_timeout = {0, 10000};
 #endif
     struct timeval sel_timeout_nd = {0, 0};
+#ifdef HAVE_SELECT
     fd_set rset, wset, eset;
     fd_set* rsetptr = NULL;
     fd_set* wsetptr = NULL;
     fd_set* esetptr = NULL;
+#endif
     EXTRA_INPUT_EVENT extra;    // Since 4.0.0; for extra input events
     int nevts = 0;              // Since 5.0.0; for timer and fd events
 
@@ -228,6 +230,7 @@ BOOL salone_IdleHandler4StandAlone (PMSGQUEUE msg_queue, BOOL wait)
 
     __mg_update_tick_count (NULL);
 
+#ifdef HAVE_SELECT
     /* rset gets modified each time around */
     if (msg_queue->nr_rfds) {
         rset = msg_queue->rfdset;
@@ -241,17 +244,15 @@ BOOL salone_IdleHandler4StandAlone (PMSGQUEUE msg_queue, BOOL wait)
         eset = msg_queue->efdset;
         esetptr = &eset;
     }
+#endif
 
     extra.params_mask = 0;
-#ifdef __NOUNIX__
-    levt = IAL_WaitEvent (msg_queue->maxfd, rsetptr, wsetptr, esetptr,
-                wait?&sel_timeout:&sel_timeout_nd, &extra);
-#elif defined (_MGGAL_BF533)
+#ifdef HAVE_SELECT
     levt = IAL_WaitEvent (msg_queue->maxfd, rsetptr, wsetptr, esetptr,
                 wait?&sel_timeout:&sel_timeout_nd, &extra);
 #else
-    levt = IAL_WaitEvent (msg_queue->maxfd, rsetptr, wsetptr, esetptr,
-                wait?&sel_timeout:&sel_timeout_nd, &extra);
+    levt = IAL_WaitEvent (0, NULL, NULL, NULL,
+                wait ? &sel_timeout : &sel_timeout_nd, &extra);
 #endif
 
     if (levt < 0) {
@@ -324,7 +325,9 @@ BOOL salone_IdleHandler4StandAlone (PMSGQUEUE msg_queue, BOOL wait)
     msg_queue->old_tick_count = __mg_tick_counter;
 
     /* go through registered listen fds */
+#ifdef HAVE_SELECT
     nevts += __mg_kernel_check_listen_fds (msg_queue, &rset, wsetptr, esetptr);
+#endif
     return (nevts > 0);
 }
 

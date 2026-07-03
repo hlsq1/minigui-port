@@ -173,7 +173,9 @@ MSGQUEUE* mg_AllocMsgQueueForThisThread (BOOL sign_in)
 
 #ifdef _MGHAVE_VIRTUAL_WINDOW
     pMsgQueue->th = pthread_self();
+#ifndef __MINIOS__
     pthread_setspecific (__mg_threadinfo_key, pMsgQueue);
+#endif
 #endif
 
     if (sign_in) {
@@ -202,7 +204,7 @@ void mg_FreeMsgQueueForThisThread (BOOL sign_off)
         mg_DestroyMsgQueue (pMsgQueue);
         free (pMsgQueue);
 
-#ifdef _MGHAVE_VIRTUAL_WINDOW
+#if defined(_MGHAVE_VIRTUAL_WINDOW) && !defined(__MINIOS__)
 #ifdef __VXWORKS__
         pthread_setspecific (__mg_threadinfo_key, (void*)-1);
 #else
@@ -300,6 +302,13 @@ static BOOL std_idle_handler (MSGQUEUE* msg_queue, BOOL wait)
 
     if (timeout_ms > 0)
         __mg_os_time_delay (timeout_ms);
+
+    /* [ADDED] Update tick counter before checking timers.
+     * In standalone mode, without this, __mg_tick_counter is 0
+     * and old_tick_count is 0, so inter is always 0, causing
+     * __mg_check_expired_timers to skip the check entirely.
+     * salone_IdleHandler4StandAlone in standalone.c already does this. */
+    __mg_update_tick_count (NULL);
 
     n = __mg_check_expired_timers (msg_queue,
             __mg_tick_counter - msg_queue->old_tick_count);
@@ -495,6 +504,9 @@ HWND kernel_CheckInvalidRegion (PMAINWIN pWin)
     PCONTROL pCtrl = (PCONTROL)pWin;
     HWND hwnd;
 
+    if (!pWin)
+        return HWND_NULL;
+
     /* Since 5.0.0: skip virtual window */
     if (pWin->WinType == TYPE_VIRTWIN)
         return HWND_NULL;
@@ -518,6 +530,9 @@ static HWND msgCheckHostedTree (PMAINWIN pHosting)
 {
     HWND hNeedPaint;
     PMAINWIN pHosted;
+
+    if (!pHosting)
+        return 0;
 
     /* Since 5.0.0: always skip desktop */
     if (pHosting != __mg_dsk_win &&
@@ -659,7 +674,11 @@ int GUIAPI BroadcastMessageInThisThread (UINT nMsg,
     MSGQUEUE* pMsgQueue;
     MSG msg = { HWND_NULL, nMsg, wParam, lParam };
 
+#ifdef __MINIOS__
+    pMsgQueue = __mg_dsk_msg_queue;
+#else
     pMsgQueue = (MSGQUEUE*)pthread_getspecific (__mg_threadinfo_key);
+#endif
 #ifdef __VXWORKS__
     if (pMsgQueue == (void *)-1) {
         pMsgQueue = NULL;
@@ -971,7 +990,7 @@ checkagain:
         goto checkagain;
     }
     else {
-        if (!pMsgQueue->OnIdle (pMsgQueue, FALE)) {
+        if (!pMsgQueue->OnIdle (pMsgQueue, FALSE)) {
             handle_idle_message (pMsgQueue);
         }
     }

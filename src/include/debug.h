@@ -215,12 +215,21 @@ dump_message_queue (const MSGQUEUE* msg_queue, const char* name)
 {
     int i, nr;
 
+#ifdef HAVE_SELECT
     _MG_PRINTF ("Message queue for %s: Root Window (%p), nrWindows (%d), "
             "nrTimers (%d), nrListenFD (%d):\n",
             name,
             msg_queue->pRootMainWin ?
                 msg_queue->pRootMainWin->spCaption : "NULL",
             msg_queue->nrWindows, msg_queue->nr_timers, msg_queue->nr_fd_slots);
+#else
+    _MG_PRINTF ("Message queue for %s: Root Window (%p), nrWindows (%d), "
+            "nrTimers (%d):\n",
+            name,
+            msg_queue->pRootMainWin ?
+                msg_queue->pRootMainWin->spCaption : "NULL",
+            msg_queue->nrWindows, msg_queue->nr_timers);
+#endif
 
     nr = 0;
     for (i = 0; i < DEF_NR_TIMERS; i++) {
@@ -237,6 +246,7 @@ dump_message_queue (const MSGQUEUE* msg_queue, const char* name)
                 nr);
     }
 
+#ifdef HAVE_SELECT
     nr = 0;
     for (i = 0; i < msg_queue->nr_fd_slots; i++) {
         if (msg_queue->fd_slots[i]) {
@@ -246,6 +256,7 @@ dump_message_queue (const MSGQUEUE* msg_queue, const char* name)
             nr++;
         }
     }
+#endif
 
     _MG_PRINTF ("----End of message queue for %s\n", name);
 }

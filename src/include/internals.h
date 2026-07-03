@@ -806,6 +806,9 @@ static inline void deleteThreadInfoKey (void)
 
 static inline MSGQUEUE* getMsgQueueForThisThread (void)
 {
+#ifdef __MINIOS__
+    return __mg_dsk_msg_queue;
+#else
     MSGQUEUE* pMsgQueue;
 
     pMsgQueue = (MSGQUEUE*)pthread_getspecific (__mg_threadinfo_key);
@@ -816,17 +819,22 @@ static inline MSGQUEUE* getMsgQueueForThisThread (void)
 #endif
 
     return pMsgQueue;
+#endif
 }
 
 static inline TIMER** getTimerSlotsForThisThread (PMSGQUEUE* retMsgQueue)
 {
     MSGQUEUE* pMsgQueue;
 
+#ifdef __MINIOS__
+    pMsgQueue = __mg_dsk_msg_queue;
+#else
     pMsgQueue = (MSGQUEUE*)pthread_getspecific (__mg_threadinfo_key);
 #ifdef __VXWORKS__
     if (pMsgQueue == (void *)-1) {
         pMsgQueue = NULL;
     }
+#endif
 #endif
 
     if (pMsgQueue) {

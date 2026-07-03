@@ -415,6 +415,10 @@ unsigned int __mg_os_get_random_seed (void)
     return rt_tick_get();
 #elif defined (__FREERTOS__)
     return 0; // just return zero for now.
+#elif defined (__MINIOS__)
+    /* miniOS: use getticks() (jiffies at HZ=100) */
+    extern int getticks(void);
+    return (unsigned int)getticks();
 #else
     /*other os use time, for example: linux, OSE, etc.*/
     return time (NULL);
@@ -454,6 +458,10 @@ void __mg_os_time_delay (int ms)
 #elif defined (__FREERTOS__)
     extern void vTaskDelay(int xTicksToDelay);
     vTaskDelay(ms);
+#elif defined (__MINIOS__)
+    /* miniOS: sleep() takes milliseconds */
+    extern void sleep(int ms);
+    sleep(ms);
 #else
 #error "Please implement __mg_os_time_delay for your OS"
 #endif
@@ -493,6 +501,29 @@ DWORD __mg_os_get_time_ticks (void)
     }
 
     return (current - startup_time_win32) / 10;
+}
+
+#elif defined (__MINIOS__)
+
+/* miniOS: use clock() which returns milliseconds (CLOCKS_PER_SEC=1000) */
+/* clock() and getticks() are declared by miniOS <time.h> */
+
+static clock_t minios_startup_clock = 0;
+
+void __mg_os_start_time(void)
+{
+    minios_startup_clock = clock();
+}
+
+DWORD __mg_os_get_time_ms(void)
+{
+    return (DWORD)(clock() - minios_startup_clock);
+}
+
+DWORD __mg_os_get_time_ticks(void)
+{
+    /* 10ms ticks from getticks() at HZ=100 */
+    return (DWORD)(getticks() - (minios_startup_clock / 10));
 }
 
 #elif defined (HAVE_CLOCK_GETTIME)
@@ -561,8 +592,22 @@ time_t __mg_os_time (time_t * timer)
 {
 #if defined (HAVE_TIME)
     return time (timer);
+#elif defined (__MINIOS__)
+    /* miniOS: get_time() fills struct tm, convert to seconds since epoch */
+    extern int get_time(struct tm* time);
+    struct tm tm;
+    get_time(&tm);
+    /* Simple conversion: treat fields directly (not accurate for all dates,
+     * but sufficient for MiniGUI's usage as a seed/display value) */
+    time_t t = (tm.tm_year + 1900) * 31536000
+             + tm.tm_yday * 86400
+             + tm.tm_hour * 3600
+             + tm.tm_min * 60
+             + tm.tm_sec;
+    if (timer) *timer = t;
+    return t;
 #else
-#warn "Please implement __mg_os_time for your OS"
+#warning "Please implement __mg_os_time for your OS"
     return 0;
 #endif
 }
@@ -572,7 +617,7 @@ time_t __mg_os_mktime (struct tm * timeptr)
 #if defined (HAVE_MKTIME)
     return mktime (timeptr);
 #else
-#warn "Please implement __mg_os_mktime for your OS"
+#warning "Please implement __mg_os_mktime for your OS"
     return 0;
 #endif
 }
@@ -582,7 +627,7 @@ struct tm *__mg_os_localtime (const time_t * timer)
 #if defined (HAVE_LOCALTIME)
     return localtime (timer);
 #else
-#warn "Please implement __mg_os_localtime for your OS"
+#warning "Please implement __mg_os_localtime for your OS"
     static struct tm _19800101_tm = {
         0, /* tm_sec: seconds */
         0, /* tm_min: minutes */

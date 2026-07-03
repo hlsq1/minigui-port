@@ -114,27 +114,25 @@ static int wait_event (int which, int maxfd, fd_set *in, fd_set *out, fd_set *ex
 
     retvalue = __comminput_wait_for_input (timeout);
 
+    /* [ADDED] debug removed */
+
     if (retvalue > 0) {
+        int ret = 0;
+
         if (retvalue & COMM_MOUSEINPUT) {
             if (__comminput_ts_getdata (&MOUSEX, &MOUSEY, &MOUSEBUTTON) == 0)
-                retvalue = IAL_MOUSEEVENT;
-            else
-                retvalue = -1;
+                ret |= IAL_MOUSEEVENT;
         }
-        else if (retvalue & COMM_KBINPUT) {
+        if (retvalue & COMM_KBINPUT) {
             if (__comminput_kb_getdata (&KEYCODE, &KEYSTATUS) == 0) {
-                if (kbd_state[KEYCODE] == KEYSTATUS) {
-                    retvalue = -1;
+                if (kbd_state[KEYCODE] != KEYSTATUS) {
+                    ret |= IAL_KEYEVENT;
                 }
-
                 kbd_state[KEYCODE] = KEYSTATUS;
-                retvalue = IAL_KEYEVENT;
             }
-            else
-                retvalue = -1;
         }
-        else
-            retvalue = -1;
+
+        retvalue = ret > 0 ? ret : -1;
     }
     else if (retvalue < 0) {
         retvalue = -1;

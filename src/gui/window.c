@@ -4264,8 +4264,10 @@ HWND GUIAPI CreateMainWindowEx2 (PMAINWINCREATE pCreateInfo, LINT id,
 #else   /* defined _MGRM_THREADS */
 
     /* You must create main window in the main thread for non-threads modes */
+#ifndef __MINIOS__
     if (getMsgQueueForThisThread () != __mg_dsk_msg_queue)
         goto err;
+#endif
 
     pWin->pHosting = getMainWindowPtr (pCreateInfo->hHosting);
     if (pWin->pHosting == NULL) {
@@ -4275,7 +4277,9 @@ HWND GUIAPI CreateMainWindowEx2 (PMAINWINCREATE pCreateInfo, LINT id,
         goto err;
     }
 
+#ifndef __MINIOS__
     assert (__mg_dsk_msg_queue->pRootMainWin == __mg_dsk_win);
+#endif
     pWin->pMsgQueue = __mg_dsk_msg_queue;
 #endif  /* not defined _MGRM_THREADS */
 
