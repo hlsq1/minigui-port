@@ -61,7 +61,12 @@
 #define HAVE_LOCALE_H 1
 
 /* Define to 1 if you have the `localtime' function. */
-#define HAVE_LOCALTIME 1
+/* miniOS's localtime is non-standard: localtime(uint32_t, struct tm*), not
+ * localtime(const time_t*). Left undef so nposix.c uses its built-in fixed-date
+ * stub instead of the incompatible miniOS version (which would also clash at
+ * link with any standard 1-arg localtime). time()/mktime() ARE provided
+ * (mg_time.c) since miniOS userspace lacks both entirely - no clash. */
+/* #undef HAVE_LOCALTIME */
 
 /* Define to 1 if you have the <math.h> header file. */
 #define HAVE_MATH_H 1
