@@ -50,7 +50,7 @@ compile_glob() {   # compile_glob <subdir> <excluded basenames...>
 compile_glob libc
 compile_glob misc      drawsemop.c rc4.c misc-dt.c
 compile_glob main
-compile_glob kernel    desktop.c desktop-comm.c cursor-comm.c timer_posix.c cursor_stubs.c cursor_fix.c
+compile_glob kernel    desktop.c desktop-comm.c cursor-comm.c timer_posix.c
 compile_glob sysres    mgetc_win32.c
 # incore GUI resources (bmp/gif/icon/cursor). The _*_inner_res.c aggregates are
 # #included by incoreres.c, so compile only the individual data files here.
