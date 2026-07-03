@@ -229,3 +229,40 @@ void perror(const char *s)
     if (s && *s) { fputs(s, stderr); fputs(": ", stderr); }
     fputs("error\n", stderr);
 }
+
+/* tp_* file API used by src/misc/misc-dt.c's .etc config reader/writer
+ * (see minios-compat/include/os_file_api.h) - thin wrappers over the FILE*
+ * layer above. */
+FILE *tp_fopen(const char *path, const char *mode) { return fopen(path, mode); }
+
+size_t tp_fread(void *ptr, size_t size, size_t n, FILE *fp)
+{ return fread(ptr, size, n, fp); }
+
+size_t tp_fwrite(const void *ptr, size_t size, size_t n, FILE *fp)
+{ return fwrite(ptr, size, n, fp); }
+
+int tp_fseek(FILE *fp, long off, int whence) { return fseek(fp, off, whence); }
+
+long tp_ftell(FILE *fp) { return ftell(fp); }
+
+long tp_flength(FILE *fp)
+{
+    long cur = ftell(fp);
+    if (cur < 0)
+        return -1;
+    if (fseek(fp, 0, SEEK_END) != 0)
+        return -1;
+    long len = ftell(fp);
+    fseek(fp, cur, SEEK_SET);
+    return len;
+}
+
+int tp_fexist(const char *path)
+{
+    FILE *f = fopen(path, "r");
+    if (f) {
+        fclose(f);
+        return 1;
+    }
+    return 0;
+}

@@ -58,7 +58,8 @@
 #define HAVE_LIMITS_H 1
 
 /* Define to 1 if you have the <locale.h> header file. */
-#define HAVE_LOCALE_H 1
+/* minios: no locale support; drops <locale.h> include in init-lite.c */
+/* #undef HAVE_LOCALE_H */
 
 /* Define to 1 if you have the `localtime' function. */
 /* miniOS's localtime is non-standard: localtime(uint32_t, struct tm*), not
@@ -96,7 +97,8 @@
 /* #undef HAVE_SELECT */
 
 /* Define to 1 if you have the `setlocale' function. */
-#define HAVE_SETLOCALE 1
+/* minios: no setlocale; drops the setlocale(LC_ALL,"C") call in init-lite.c */
+/* #undef HAVE_SETLOCALE */
 
 /* Define to 1 if you have the <stdatomic.h> header file. */
 #define HAVE_STDATOMIC_H 1
@@ -391,7 +393,14 @@
 #define _MGCTRL_STATIC 1
 
 /* Define if include TEXTEDIT control */
-#define _MGCTRL_TEXTEDIT 1
+/* minios: TEXTEDIT is deferred for milestone A. The new impl (src/textedit/*.c)
+ * is guarded by __MINIGUI_LIB__, which we don't define (it flips common.h to a
+ * different mgconfig include path). The legacy impl (control/textedit.c) uses a
+ * non-static C99 `inline GETDC/RELEASEDC` that emits unresolved externals under
+ * -std=gnu99. All other controls build fine; only TEXTEDIT has this coupling, so
+ * disable the whole control (drops RegisterTextEditControl/GETDC/RELEASEDC).
+ * Re-enable later once __MINIGUI_LIB__ + root mgconfig.h are wired up. */
+/* #undef _MGCTRL_TEXTEDIT */
 
 /* Define if use new implementation of TEXTEDIT control */
 #define _MGCTRL_TEXTEDIT_USE_NEW_IMPL 1
@@ -594,7 +603,9 @@
 /* #undef _MGIAL_JZ4740 */
 
 /* Define if include Linux libinput IAL engine */
-#define _MGIAL_LIBINPUT 1
+/* minios: linux-libinput.c is Linux-specific and not compiled; we use the comm
+ * engine + miniOS backend, so disable to drop the ial.c inputs[] reference. */
+/* #undef _MGIAL_LIBINPUT */
 
 /* Define if include the lide IAL engine */
 /* #undef _MGIAL_LIDE */
@@ -618,7 +629,8 @@
 /* #undef _MGIAL_RANDOM */
 
 /* Define if include single touch key IAL engine */
-#define _MGIAL_SINGLETOUCHKEY 1
+/* minios: singletouchkey.c not compiled; disable to drop inputs[] reference. */
+/* #undef _MGIAL_SINGLETOUCHKEY */
 
 /* Define if include IAL engine for TSLIB */
 /* #undef _MGIAL_TSLIB */

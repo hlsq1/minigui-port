@@ -12,3 +12,7 @@
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void *)-1)
 #endif
+
+/* miniOS provides mmap (io.h) but no munmap; declared here, defined no-op in
+ * minios-compat/src/mg_libc.c. See the comment there. */
+int munmap(void *addr, size_t length);

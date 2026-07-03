@@ -48,13 +48,13 @@ compile_glob() {   # compile_glob <subdir> <excluded basenames...>
 
 # clean subdirs (exclude EXTRA_DIST / other-runmode / other-RTOS / obsolete)
 compile_glob libc
-compile_glob misc      drawsemop.c rc4.c
+compile_glob misc      drawsemop.c rc4.c misc-dt.c
 compile_glob main
-compile_glob kernel    desktop.c desktop-comm.c cursor-comm.c init-lite.c timer_posix.c cursor_stubs.c
-compile_glob sysres
+compile_glob kernel    desktop.c desktop-comm.c cursor-comm.c timer_posix.c cursor_stubs.c cursor_fix.c
+compile_glob sysres    mgetc_win32.c
 compile_glob control
 compile_glob ex_ctrl
-compile_glob gui
+compile_glob gui       transkey.c
 compile_glob textedit
 compile_glob mybmp      jpeg.c
 compile_glob font       sysfont.old.c unicode-shape-complex-indic-table.c
@@ -69,8 +69,8 @@ for f in commlcd extern minios_fb; do cc "$MG/src/newgal/commlcd/$f.c"; done
 # IAL: core + comm engine + miniOS device backend (self-contained engine table)
 for f in ial comminput minios_input; do cc "$MG/src/ial/$f.c"; done
 
-# the four compat translation units
-for f in mg_stdio mg_libm mg_time mg_libc; do cc "$MG/minios-compat/src/$f.c"; done
+# the compat translation units
+for f in mg_stdio mg_libm mg_time mg_libc mg_thread; do cc "$MG/minios-compat/src/$f.c"; done
 
 echo "compiled .o: $ok   failed: $fail"
 [ -n "$faillist" ] && echo "FAILURES:$faillist"
