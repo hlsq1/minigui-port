@@ -52,12 +52,19 @@ compile_glob misc      drawsemop.c rc4.c misc-dt.c
 compile_glob main
 compile_glob kernel    desktop.c desktop-comm.c cursor-comm.c timer_posix.c cursor_stubs.c cursor_fix.c
 compile_glob sysres    mgetc_win32.c
+# incore GUI resources (bmp/gif/icon/cursor). The _*_inner_res.c aggregates are
+# #included by incoreres.c, so compile only the individual data files here.
+# sysres/font is NOT built: incore fonts come from src/font/in-core (no _mgir_
+# font symbols are referenced).
+compile_glob sysres/bmp    _bmp_inner_res.c
+compile_glob sysres/icon   _icon_inner_res.c
+compile_glob sysres/cursor
 compile_glob control
 compile_glob ex_ctrl
 compile_glob gui       transkey.c
 compile_glob textedit
 compile_glob mybmp      jpeg.c
-compile_glob font       sysfont.old.c unicode-shape-complex-indic-table.c
+compile_glob font       sysfont.old.c unicode-shape-complex-indic-table.c convgbmap.c
 compile_glob font/in-core
 compile_glob newgdi     glyph-old.c yuv.c
 compile_glob standalone

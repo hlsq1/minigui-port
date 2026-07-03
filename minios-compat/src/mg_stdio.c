@@ -7,13 +7,14 @@
  * be added later if profiling shows it matters. With _MGINCORE_RES on, runtime
  * fopen() is rare, so this mostly satisfies linking.
  *
- * sprintf/vsprintf come from miniOS ulib (vsprintf.c.obj, standard signatures).
  * printf IS defined here on purpose: miniOS bundles printf+fprintf+vfprintf into
  * one object (printf.c.obj) whose fprintf/vfprintf take an int fd, not a FILE*.
  * If the linker pulled that object to satisfy printf, its fd-based fprintf/
  * vfprintf would clash with our FILE*-based ones. Defining printf here shadows
- * the whole object so it never gets pulled. vsnprintf is provided elsewhere
- * (task #90 / MiniGUI's own src/libc). */
+ * the whole object so it never gets pulled. The same applies to our fgetc/fgets
+ * below: miniOS bundles fd-based fgetc/fgets into vsprintf.c.obj alongside
+ * atoi/strtol/strtoul/sprintf, so mg_libc.c defines those four to keep that
+ * object from being pulled. vsnprintf is provided elsewhere (task #90). */
 #include <stdio.h>
 #include <io.h>
 #include <fcntl.h>

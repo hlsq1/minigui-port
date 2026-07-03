@@ -99,6 +99,17 @@ int snprintf(char *buf, size_t size, const char *fmt, ...)
     return n;
 }
 
+/* sprintf: also in the shadowed vsprintf.c.obj; provide it here (unbounded,
+ * caller-sized buffer) over the same vnstrfmt core the rest of the system uses. */
+int sprintf(char *buf, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vnstrfmt(buf, 0x7fffffff, fmt, ap);
+    va_end(ap);
+    return n;
+}
+
 /* atexit: miniOS's exit() knows nothing of registered handlers, so a real
  * registry would never be invoked. MiniGUI registers cleanup terminators here
  * (init-lite.c); on this embedded target the process does not cleanly exit and
@@ -251,6 +262,51 @@ int sscanf(const char *str, const char *fmt, ...)
     int n = mg_vsscanf(str, fmt, ap);
     va_end(ap);
     return n;
+}
+
+/* atoi/strtol/strtoul: miniOS bundles these into vsprintf.c.obj together with
+ * fd-based fgetc/fgets that clash with our FILE* layer (mg_stdio.c). We shadow
+ * that whole object, so provide these here too. Logic mirrors miniOS's own
+ * (ulib/vsprintf.c) to keep the parsing behaviour MiniGUI already relies on:
+ * no leading-whitespace skip, strtol handles only a leading '-'. */
+unsigned long strtoul(const char *cp, char **endp, unsigned int base)
+{
+    unsigned long result = 0, value;
+    if (!base) {
+        base = 10;
+        if (*cp == '0') {
+            base = 8;
+            cp++;
+            if (tolower((unsigned char)*cp) == 'x' && isxdigit((unsigned char)cp[1])) {
+                cp++;
+                base = 16;
+            }
+        }
+    } else if (base == 16) {
+        if (cp[0] == '0' && tolower((unsigned char)cp[1]) == 'x')
+            cp += 2;
+    }
+    while (isxdigit((unsigned char)*cp) &&
+           (value = isdigit((unsigned char)*cp) ? (unsigned long)(*cp - '0')
+                : (unsigned long)(tolower((unsigned char)*cp) - 'a' + 10)) < (unsigned long)base) {
+        result = result * base + value;
+        cp++;
+    }
+    if (endp)
+        *endp = (char *)cp;
+    return result;
+}
+
+long strtol(const char *cp, char **endp, unsigned int base)
+{
+    if (*cp == '-')
+        return -(long)strtoul(cp + 1, endp, base);
+    return (long)strtoul(cp, endp, base);
+}
+
+int atoi(const char *nptr)
+{
+    return (int)strtol(nptr, (char **)NULL, 10);
 }
 
 /* munmap: miniOS has mmap but no unmap syscall. The only caller is
