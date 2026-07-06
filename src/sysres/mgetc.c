@@ -71,7 +71,12 @@ static char* _system_keys[]={
 static char* _system_values[]={
 // GAL engine and default options
     "commlcd",
-    "160x80-16bpp",
+    /* [ADDED] miniOS port: commlcd ignores the requested w/h (getinfo uses the
+     * real /dev/fb0 resolution) but GAL_SetVideoMode still forces mode->w/h to
+     * this config value (video.c:606). Must match the actual fb = 1024x768x32,
+     * otherwise the logical screen is clamped to 160x80 and only the top-left
+     * corner of any window renders. */
+    "1024x768-32bpp",
 // IAL engine
     "comm",
     "/dev/input/mice",
