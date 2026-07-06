@@ -398,15 +398,26 @@ static int init (PWERENDERER renderer)
     renderer->we_fonts[2] = GetSystemFont (SYSLOGFONT_WCHAR_DEF);
     renderer->we_fonts[3] = GetSystemFont (SYSLOGFONT_WCHAR_DEF);
     /*icon*/
+    /* [MODIFIED] miniOS port: make icon/bitmap registration failures non-fatal.
+     * The classic renderer init fails if system icons or radio/check button
+     * bitmaps can't be loaded from incore resources. For a minimal first-window
+     * test these aren't needed; the drawing functions already handle NULL bitmaps
+     * via #if 0 blocks. */
     if (!InitRendererSystemIcon (renderer->name,
-                renderer->we_icon[0], renderer->we_icon[1]))
-        return -1;
+                renderer->we_icon[0], renderer->we_icon[1])) {
+        _WRN_PRINTF ("GUI>LFRDR: failed to init system icons for %s\n",
+                renderer->name);
+    }
 
-    if (!RegisterSystemBitmap (HDC_SCREEN, renderer->name, SYSBMP_RADIOBUTTON))
-        return -1;
+    if (!RegisterSystemBitmap (HDC_SCREEN, renderer->name, SYSBMP_RADIOBUTTON)) {
+        _WRN_PRINTF ("GUI>LFRDR: failed to register radiobutton bmp for %s\n",
+                renderer->name);
+    }
 
-    if (!RegisterSystemBitmap (HDC_SCREEN, renderer->name, SYSBMP_CHECKBUTTON))
-        return -1;
+    if (!RegisterSystemBitmap (HDC_SCREEN, renderer->name, SYSBMP_CHECKBUTTON)) {
+        _WRN_PRINTF ("GUI>LFRDR: failed to register checkbutton bmp for %s\n",
+                renderer->name);
+    }
 
     gui_LoadIconRes(HDC_SCREEN, renderer->name, (char*)SYSICON_TREEFOLD);
     gui_LoadIconRes(HDC_SCREEN, renderer->name, (char*)SYSICON_TREEUNFOLD);
