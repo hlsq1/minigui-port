@@ -173,6 +173,13 @@ int __comminput_wait_for_input(struct timeval *timeout)
                 evt_count++;
                 cached_mouse_valid = 1;
                 got_data |= COMM_MOUSEINPUT;
+                if (evt_count <= 10) {
+                    char buf[64];
+                    int len = sprintf(buf, "MOUSE evt#%d: dx=%d dy=%d btns=0x%x\n",
+                            evt_count, cached_mouse_ev.dx, cached_mouse_ev.dy,
+                            cached_mouse_ev.buttons);
+                    write(1, buf, len);
+                }
             }
         }
 
