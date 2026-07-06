@@ -20,18 +20,26 @@
 #include "gal.h"
 #include "exstubs.h"
 
-/* miniOS input event structures (from uapi/minios/input.h) */
+/* miniOS /dev/kbd event structure (from uapi/minios/kbd.h).
+ * MUST match kernel's struct kbd_event byte-for-byte:
+ *   uint8_t scancode; uint8_t pressed; uint8_t extended;  (3 bytes total)
+ * Previously used a 2-byte struct which caused read() misalignment. */
 struct key_event {
     uint8_t scancode;
-    uint8_t flags;
+    uint8_t pressed;
+    uint8_t extended;
 };
 #define KEY_EVENT_MAKE  1
 #define KEY_EVENT_BREAK 0
 
+/* miniOS /dev/mouse event structure (MUST match kernel's struct mouse_event).
+ * Kernel sends: int32_t dx; int32_t dy; int32_t dz; uint32_t buttons; (16 bytes).
+ * Previously used a 3-byte struct which caused read() misalignment. */
 struct mouse_event {
-    int8_t dx;
-    int8_t dy;
-    uint8_t buttons;
+    int32_t dx;
+    int32_t dy;
+    int32_t dz;
+    uint32_t buttons;
 };
 #define MOUSE_BUTTON_LEFT   0x01
 #define MOUSE_BUTTON_RIGHT  0x02
@@ -127,7 +135,7 @@ int __comminput_kb_getdata(short *key, short *status)
     cached_kbd_valid = 0;
 
     *key = cached_kbd_ev.scancode;
-    *status = (cached_kbd_ev.flags == KEY_EVENT_MAKE) ? 1 : 0;
+    *status = (cached_kbd_ev.pressed == KEY_EVENT_MAKE) ? 1 : 0;
 
     return 0;
 }
