@@ -574,6 +574,14 @@ int InitGUI (int argc, const char* agr[])
 
     SetKeyboardLayout ("default");
 
+    /* [ADDED] miniOS port: standalone init omitted the initial cursor setup
+     * that the threads-mode init.c has. Without SetCursor, pCurCsr stays NULL
+     * so boxleft()/boxtop() return -100 and the cursor is never drawn. */
+#ifdef _MGHAVE_CURSOR
+    SetCursor (GetSystemCursor (IDC_ARROW));
+    SetCursorPos (g_rcScr.right >> 1, g_rcScr.bottom >> 1);
+#endif
+
     mg_TerminateMgEtc ();
 
     return 0;
