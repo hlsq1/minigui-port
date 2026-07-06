@@ -32,3 +32,4 @@ m4/*.m4
 /src/sysres/font_list
 /src/sysres/license/dat_files/
 /configure~
+build/

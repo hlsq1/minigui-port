@@ -11,9 +11,8 @@ set -u
 MG="$(cd "$(dirname "$0")/.." && pwd)"
 OS="$(cd "$MG/../minios-master" && pwd)"
 COMPAT="$MG/minios-compat/include"
-WORK="${TMPDIR:-/tmp}/mglib"; OBJ="$WORK/obj"
+WORK="$MG/build"; OBJ="$WORK/obj"
 rm -rf "$WORK"; mkdir -p "$OBJ"
-printf '#include "%s/mgconfig_minios.h"\n' "$MG" > "$WORK/mgconfig.h"
 
 FLAGS="-m32 -std=gnu99 -nostdinc -nostdlib -fno-pie -fno-builtin \
 -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -w -c"
