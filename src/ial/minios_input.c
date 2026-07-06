@@ -65,8 +65,8 @@ static int cached_kbd_valid = 0;
 
 int __comminput_init(void)
 {
-    kbd_fd = open("/dev/kbd", O_RDONLY);
-    mouse_fd = open("/dev/mouse", O_RDONLY);
+    kbd_fd = open("/dev/kbd", O_RDONLY | O_NONBLOCK);
+    mouse_fd = open("/dev/mouse", O_RDONLY | O_NONBLOCK);
 
     {
         char buf[64];
@@ -143,10 +143,6 @@ int __comminput_kb_getdata(short *key, short *status)
 int __comminput_wait_for_input(struct timeval *timeout)
 {
     int timeout_ms;
-    static int call_count = 0;
-    static int evt_count = 0;
-
-    call_count++;
 
     if (timeout == NULL || (timeout->tv_sec == 0 && timeout->tv_usec == 0)) {
         /* No timeout means wait indefinitely (poll at 50ms intervals) */
@@ -170,23 +166,14 @@ int __comminput_wait_for_input(struct timeval *timeout)
         if (mouse_fd >= 0 && !cached_mouse_valid) {
             int n = read(mouse_fd, &cached_mouse_ev, sizeof(cached_mouse_ev));
             if (n == sizeof(cached_mouse_ev)) {
-                evt_count++;
                 cached_mouse_valid = 1;
                 got_data |= COMM_MOUSEINPUT;
-                if (evt_count <= 10) {
-                    char buf[64];
-                    int len = sprintf(buf, "MOUSE evt#%d: dx=%d dy=%d btns=0x%x\n",
-                            evt_count, cached_mouse_ev.dx, cached_mouse_ev.dy,
-                            cached_mouse_ev.buttons);
-                    write(1, buf, len);
-                }
             }
         }
 
         if (kbd_fd >= 0 && !cached_kbd_valid) {
             int n = read(kbd_fd, &cached_kbd_ev, sizeof(cached_kbd_ev));
             if (n == sizeof(cached_kbd_ev)) {
-                evt_count++;
                 cached_kbd_valid = 1;
                 got_data |= COMM_KBINPUT;
             }
