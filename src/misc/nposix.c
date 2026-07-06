@@ -505,25 +505,28 @@ DWORD __mg_os_get_time_ticks (void)
 
 #elif defined (__MINIOS__)
 
-/* miniOS: use clock() which returns milliseconds (CLOCKS_PER_SEC=1000) */
-/* clock() and getticks() are declared by miniOS <time.h> */
+/* miniOS: use getticks() as the single time base. It returns the kernel
+ * tick counter (IRQ0, HZ=100, i.e. one tick per 10ms since boot), which is
+ * exactly MiniGUI's expected centisecond tick unit. Do NOT mix in clock()
+ * (a TSC-based CLOCKS_PER_SEC value) — the two have different units/epochs
+ * and mixing them produced a huge wrapped tick that broke timer scheduling. */
+/* getticks() is declared by miniOS <time.h> */
 
-static clock_t minios_startup_clock = 0;
+static int minios_startup_ticks = 0;
 
 void __mg_os_start_time(void)
 {
-    minios_startup_clock = clock();
+    minios_startup_ticks = getticks();
 }
 
 DWORD __mg_os_get_time_ms(void)
 {
-    return (DWORD)(clock() - minios_startup_clock);
+    return (DWORD)(getticks() - minios_startup_ticks) * 10;
 }
 
 DWORD __mg_os_get_time_ticks(void)
 {
-    /* 10ms ticks from getticks() at HZ=100 */
-    return (DWORD)(getticks() - (minios_startup_clock / 10));
+    return (DWORD)(getticks() - minios_startup_ticks);
 }
 
 #elif defined (HAVE_CLOCK_GETTIME)
