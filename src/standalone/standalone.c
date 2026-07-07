@@ -228,7 +228,19 @@ BOOL salone_IdleHandler4StandAlone (PMSGQUEUE msg_queue, BOOL wait)
     }
 #endif  /* deprecated code */
 
+    /* [ADDED] miniOS port: __mg_update_tick_count(NULL) never sets
+     * QS_DESKTIMER (the branch requires msg_queue == __mg_dsk_msg_queue).
+     * That starves MSG_TIMEOUT → DesktopWinProc → dskOnTimeout, so the
+     * caret never blinks.  Track desktop ticks separately and set the
+     * flag here so GetMessage generates MSG_TIMEOUT for the desktop. */
     __mg_update_tick_count (NULL);
+    {
+        static DWORD dsk_old_ticks;
+        if (__mg_tick_counter > dsk_old_ticks + DESKTOP_TIMER_INERTVAL) {
+            __mg_dsk_msg_queue->dwState |= QS_DESKTIMER;
+            dsk_old_ticks = __mg_tick_counter;
+        }
+    }
 
 #ifdef HAVE_SELECT
     /* rset gets modified each time around */
