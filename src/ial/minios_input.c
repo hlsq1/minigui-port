@@ -82,6 +82,18 @@ int __comminput_init(void)
         return -1;
     }
 
+    /* Drain scancodes/packets buffered while the console (shell) had focus.
+     * /dev/kbd and /dev/mouse are global kernel ring buffers shared with the
+     * console, so every key typed at the shell accumulates there. Without
+     * this, the whole backlog (e.g. the command line + its Enter) floods the
+     * first GUI window on startup and can dismiss it before it is seen. */
+    {
+        struct key_event ke;
+        struct mouse_event me;
+        while (read(kbd_fd, &ke, sizeof(ke)) == (int)sizeof(ke)) { }
+        while (read(mouse_fd, &me, sizeof(me)) == (int)sizeof(me)) { }
+    }
+
     return 0;
 }
 
