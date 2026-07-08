@@ -146,7 +146,32 @@ int __comminput_kb_getdata(short *key, short *status)
 
     cached_kbd_valid = 0;
 
-    *key = cached_kbd_ev.scancode;
+    short sc = cached_kbd_ev.scancode;
+
+    /* [ADDED] E0-prefixed navigation keys arrive with the keypad base
+     * scancode (Up = 0x48 = 72, etc.) plus the extended flag set.  MiniGUI
+     * uses Linux-style keycodes where the dedicated arrow/nav cluster is the
+     * "cursor block" range (102..111), distinct from the keypad range
+     * (71..83).  Controls such as LISTBOX only handle SCANCODE_CURSORBLOCK*,
+     * so without this remap the arrow keys are seen as keypad keys and
+     * ignored.  Non-extended keypad keys keep their keypad scancodes. */
+    if (cached_kbd_ev.extended) {
+        switch (sc) {
+        case 72: sc = SCANCODE_CURSORBLOCKUP;    break; /* E0 48 -> 103 */
+        case 80: sc = SCANCODE_CURSORBLOCKDOWN;  break; /* E0 50 -> 108 */
+        case 75: sc = SCANCODE_CURSORBLOCKLEFT;  break; /* E0 4B -> 105 */
+        case 77: sc = SCANCODE_CURSORBLOCKRIGHT; break; /* E0 4D -> 106 */
+        case 71: sc = SCANCODE_HOME;             break; /* E0 47 -> 102 */
+        case 79: sc = SCANCODE_END;              break; /* E0 4F -> 107 */
+        case 73: sc = SCANCODE_PAGEUP;           break; /* E0 49 -> 104 */
+        case 81: sc = SCANCODE_PAGEDOWN;         break; /* E0 51 -> 109 */
+        case 82: sc = SCANCODE_INSERT;           break; /* E0 52 -> 110 */
+        case 83: sc = SCANCODE_REMOVE;           break; /* E0 53 -> 111 */
+        default: break;
+        }
+    }
+
+    *key = sc;
     *status = (cached_kbd_ev.pressed == KEY_EVENT_MAKE) ? 1 : 0;
 
     return 0;
