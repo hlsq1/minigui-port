@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <poll.h>
 
 #include "common.h"
 #include "minigui.h"
@@ -44,12 +45,6 @@ struct mouse_event {
 #define MOUSE_BUTTON_LEFT   0x01
 #define MOUSE_BUTTON_RIGHT  0x02
 #define MOUSE_BUTTON_MIDDLE 0x04
-
-/* miniOS sleep wrapper */
-static void minios_sleep_ms(int ms) {
-    extern void sleep(int ms);
-    sleep(ms);
-}
 
 static int kbd_fd = -1;
 static int mouse_fd = -1;
@@ -182,46 +177,51 @@ int __comminput_wait_for_input(struct timeval *timeout)
     int timeout_ms;
 
     if (timeout == NULL || (timeout->tv_sec == 0 && timeout->tv_usec == 0)) {
-        /* No timeout means wait indefinitely (poll at 50ms intervals) */
+        /* No hard timeout: wait a short slice. MiniGUI relies on wait_for_input
+         * returning periodically even with no input so the kernel can check
+         * its timers (caret blink etc.). */
         timeout_ms = 50;
     } else {
         timeout_ms = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
         if (timeout_ms < 10)
-            timeout_ms = 10;  /* minimum poll interval */
+            timeout_ms = 10;  /* minimum wait slice */
     }
 
-    /* Poll with small sleep intervals until timeout or event.
-     * MiniGUI relies on wait_for_input returning periodically even with
-     * NULL timeout, so the kernel can check for timer expiration. */
-    int elapsed = 0;
-    int poll_interval = 10;  /* 10ms poll interval */
-
-    while (elapsed < timeout_ms) {
-        int got_data = 0;
-
-        /* Check both mouse and keyboard each iteration */
-        if (mouse_fd >= 0 && !cached_mouse_valid) {
-            int n = read(mouse_fd, &cached_mouse_ev, sizeof(cached_mouse_ev));
-            if (n == sizeof(cached_mouse_ev)) {
-                cached_mouse_valid = 1;
-                got_data |= COMM_MOUSEINPUT;
-            }
-        }
-
-        if (kbd_fd >= 0 && !cached_kbd_valid) {
-            int n = read(kbd_fd, &cached_kbd_ev, sizeof(cached_kbd_ev));
-            if (n == sizeof(cached_kbd_ev)) {
-                cached_kbd_valid = 1;
-                got_data |= COMM_KBINPUT;
-            }
-        }
-
-        if (got_data)
-            return got_data;
-
-        minios_sleep_ms(poll_interval);
-        elapsed += poll_interval;
+    /* Wait on the fds that still need a fresh event (skip any already cached,
+     * matching the previous read-loop). One poll() replaces the old
+     * read+sleep spin: the kernel sleeps us until an fd is ready or the
+     * timeout elapses, then we read only the fds it flagged POLLIN. */
+    struct pollfd pfds[2];
+    int mouse_slot = -1, kbd_slot = -1;
+    int nfds = 0;
+    if (mouse_fd >= 0 && !cached_mouse_valid) {
+        pfds[nfds].fd = mouse_fd; pfds[nfds].events = POLLIN; pfds[nfds].revents = 0;
+        mouse_slot = nfds++;
+    }
+    if (kbd_fd >= 0 && !cached_kbd_valid) {
+        pfds[nfds].fd = kbd_fd; pfds[nfds].events = POLLIN; pfds[nfds].revents = 0;
+        kbd_slot = nfds++;
     }
 
-    return 0;  /* timeout */
+    if (poll(pfds, nfds, timeout_ms) <= 0)
+        return 0;  /* timeout (0) or error (-1): no new input this slice */
+
+    int got_data = 0;
+    if (mouse_slot >= 0 && (pfds[mouse_slot].revents & POLLIN)) {
+        int n = read(mouse_fd, &cached_mouse_ev, sizeof(cached_mouse_ev));
+        if (n == sizeof(cached_mouse_ev)) {
+            cached_mouse_valid = 1;
+            got_data |= COMM_MOUSEINPUT;
+        }
+    }
+
+    if (kbd_slot >= 0 && (pfds[kbd_slot].revents & POLLIN)) {
+        int n = read(kbd_fd, &cached_kbd_ev, sizeof(cached_kbd_ev));
+        if (n == sizeof(cached_kbd_ev)) {
+            cached_kbd_valid = 1;
+            got_data |= COMM_KBINPUT;
+        }
+    }
+
+    return got_data;
 }
