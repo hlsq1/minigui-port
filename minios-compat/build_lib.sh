@@ -9,7 +9,7 @@
 # Layout assumed:  <parent>/minigui-port/  and  <parent>/minios-master/
 set -u
 MG="$(cd "$(dirname "$0")/.." && pwd)"
-OS="$(cd "$MG/../minios-master" && pwd)"
+OS="$(cd "$MG/../minios-testgui" && pwd)"
 COMPAT="$MG/minios-compat/include"
 WORK="$MG/build"; OBJ="$WORK/obj"
 rm -rf "$WORK"; mkdir -p "$OBJ"
