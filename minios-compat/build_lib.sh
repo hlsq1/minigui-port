@@ -6,10 +6,11 @@
 # freestanding flags + minios-compat headers + mgconfig_minios.h, then archives
 # every object plus the four compat translation units into libminigui.a.
 #
-# Layout assumed:  <parent>/minigui-port/  and  <parent>/minios-master/
+# Layout assumed: minigui-port is the minios repository's submodule.
+# Set MINIOS_DIR when building from a non-standard checkout layout.
 set -u
 MG="$(cd "$(dirname "$0")/.." && pwd)"
-OS="$(cd "$MG/../minios-testgui" && pwd)"
+OS="$(cd "${MINIOS_DIR:-$MG/..}" && pwd)"
 COMPAT="$MG/minios-compat/include"
 WORK="$MG/build"; OBJ="$WORK/obj"
 rm -rf "$WORK"; mkdir -p "$OBJ"

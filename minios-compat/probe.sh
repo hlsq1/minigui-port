@@ -7,10 +7,11 @@
 # translation units build and which external symbols stay undefined
 # (= the libc/system dependency surface). It does NOT link or run.
 #
-# Assumes layout:  <parent>/minigui-port/  and  <parent>/minios-master/
+# Assumes minigui-port is the miniOS repository's submodule.
+# Set MINIOS_DIR when probing from a non-standard checkout layout.
 set -u
 MG="$(cd "$(dirname "$0")/.." && pwd)"          # minigui-port root
-OS="$(cd "$MG/../minios-master" && pwd)"        # miniOS tree
+OS="$(cd "${MINIOS_DIR:-$MG/..}" && pwd)"        # miniOS tree
 COMPAT="$MG/minios-compat/include"
 WORK="${TMPDIR:-/tmp}/mgprobe-work"; OBJ="$WORK/obj"
 rm -rf "$WORK"; mkdir -p "$OBJ"
