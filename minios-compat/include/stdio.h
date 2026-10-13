@@ -1,24 +1,15 @@
-/* minios-compat <stdio.h> - DECLARATION SKELETON, NOT YET IMPLEMENTED.
+/* minios-compat <stdio.h> - FILE*-based stdio declarations.
  *
- * GAP #1 (biggest): MiniGUI needs standard FILE*-based stdio, but miniOS
- * provides only fd-based stdio (stdout==1, fprintf(int fd, ...)). This header
- * declares the standard FILE* API so MiniGUI compiles; the implementation
- * still has to be written as a thin fd-based FILE wrapper:
- *     FILE = { int fd; ... };  fopen->open, fread->read, fseek->lseek, ...
- * Combined with incore resources, real fopen() calls at runtime are rare.
- * Until implemented, linking will report these symbols undefined. */
+ * MiniGUI needs standard FILE*-based stdio, while miniOS provides fd-based
+ * syscalls. The implementation in minios-compat/src/mg_stdio.c exposes the
+ * standard streams as FILE objects backed by file descriptors.
+ */
 #pragma once
 #include <stddef.h>
 #include <stdarg.h>
 typedef struct _MG_FILE FILE;
 extern FILE *stdin; extern FILE *stdout; extern FILE *stderr;
 #define EOF (-1)
-#define STD_IN 0
-#define STD_OUT 1
-#define STD_ERR 2
-#define stdin  STD_IN
-#define stdout STD_OUT
-#define stderr STD_ERR
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
