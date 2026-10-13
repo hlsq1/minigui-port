@@ -23,6 +23,12 @@
 #include <string.h>
 #include <stdarg.h>
 
+/* The compatibility header maps these names to miniOS file descriptors for
+ * MiniGUI callers. This implementation must expose the FILE * objects. */
+#undef stdin
+#undef stdout
+#undef stderr
+
 #define _F_EOF 1
 #define _F_ERR 2
 
